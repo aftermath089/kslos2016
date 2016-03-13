@@ -131,7 +131,7 @@ Contoh :
 Kita dapat membuat web server dengan satu commandline saja pada python, cobalah command
 berikut :
 +---------------------------------------
-$ python -m SimpleHTTPServer <lokasi folder>
+$ python -m SimpleHTTPServer
 +---------------------------------------
 
 --------|Praktek Request Method
