@@ -68,9 +68,6 @@ lihatkan dalam bentuk hexadecimal. Karena 1 byte dapat memiliki kemung-
 kinan 2**8, maka 1 byte dapat direpresentasikan dalam bentuk 2 hexadecimal
 (16*16). Memory address ada di paling kiri dengan format 0x.
 
-
-
-
 --------| Debugging
 
 Debugging program ELF pada linux menggunakan gdb.
@@ -87,6 +84,29 @@ $ (gdb) disassembly main
 Dengan gdb, kita dapat menganalisa setiap langkah dari eksekusi 
 program, (examine, paused, step, & repeat).
 
+--------| Register
+
+Processor memiliki variabel spesial yang dinamakan registers. Setiap arsitek
+tur(x86,AT&T,ARM) memiliki register yang berbeda.
+
+Untuk pelatihan ini kita akan fokus pada arsitektur intel x86.
+
+4 register pertama yaitu EAX, ECX, EDX, dan EBX adalah general purpose regis-
+ter. Dikenal secara urut sebagai Accumulator, Counter, Data, dan Base register. 
+Register berguna untuk berbagai keperluan, namun tugas utamanya sebagai 
+variabel sementara untuk CPU.
+
+4 register selanjutnya adalah ESP, EBP, ESI, dan EDI adalah general purpose
+register juga, sering dikenal juga sebagai pointer atau index. Dikenal
+secara urut sebagai Stack Pointer, Base Pointer, Source Index, dan Destination index.
+Disebut sebagai pointer(ESP, EBP) karena mereka berdua menyimpan address 4 byte(32-bit).
+
+EIP register adalah register pointer instruksi, yang menunjuk ke posisi dimana
+instruksi pada CPU saat ini. Seperti saat kita membaca dengan menunjuk setiap 
+kata yang dibaca.
+
+EFLAGS isinya beberapa bit flags yang digunakan untuk cmp(compare) dan segmentasi
+memori.
 
 --------| Operasi pada ASM x86
 Instruksi ASM pada syntax intel mengikuti kaidah berikut : 
@@ -127,11 +147,6 @@ Apa hasilnya?
 804838f: 7e 02       jle 8048393 <main+0x1f>
 8048391: eb 13       jmp 80483a6 <main+0x32>
 +---------------------------------------
-
---------| Extra Debugging
-
-Saat compile dengan GCC, tambahkan flag -g. Sehingga saat debugging 
-dapat memakai command 'list';
 
 --------| Examine Memory
 
@@ -205,32 +220,10 @@ $ (gdb) ni
 $ (gdb) s
 +---------------------------------------
 
+--------| Extra Debugging
 
-
-
---------| Register
-
-Processor memiliki variabel spesial yang dinamakan registers. Setiap arsitek
-tur(x86,AT&T,ARM) memiliki register yang berbeda.
-
-Untuk pelatihan ini kita akan fokus pada arsitektur intel x86.
-
-4 register pertama yaitu EAX, ECX, EDX, dan EBX adalah general purpose regis-
-ter. Dikenal secara urut sebagai Accumulator, Counter, Data, dan Base register. 
-Register berguna untuk berbagai keperluan, namun tugas utamanya sebagai 
-variabel sementara untuk CPU.
-
-4 register selanjutnya adalah ESP, EBP, ESI, dan EDI adalah general purpose
-register juga, sering dikenal juga sebagai pointer atau index. Dikenal
-secara urut sebagai Stack Pointer, Base Pointer, Source Index, dan Destination index.
-Disebut sebagai pointer(ESP, EBP) karena mereka berdua menyimpan address 4 byte(32-bit).
-
-EIP register adalah register pointer instruksi, yang menunjuk ke posisi dimana
-instruksi pada CPU saat ini. Seperti saat kita membaca dengan menunjuk setiap 
-kata yang dibaca.
-
-EFLAGS isinya beberapa bit flags yang digunakan untuk cmp(compare) dan segmentasi
-memori.
+Saat compile dengan GCC, tambahkan flag -g. Sehingga saat debugging 
+dapat memakai command 'list';
 
 --------|Praktek
 
