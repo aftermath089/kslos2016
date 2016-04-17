@@ -1,0 +1,244 @@
+__/\\\________/\\\_____/\\\\\\\\\\\____/\\\___________________/\\\\\__________/\\\\\\\\\\\___        
+ _\/\\\_____/\\\//____/\\\/////////\\\_\/\\\_________________/\\\///\\\______/\\\/////////\\\_       
+  _\/\\\__/\\\//______\//\\\______\///__\/\\\_______________/\\\/__\///\\\___\//\\\______\///__      
+   _\/\\\\\\//\\\_______\////\\\_________\/\\\______________/\\\______\//\\\___\////\\\_________     
+    _\/\\\//_\//\\\_________\////\\\______\/\\\_____________\/\\\_______\/\\\______\////\\\______    
+     _\/\\\____\//\\\___________\////\\\___\/\\\_____________\//\\\______/\\\__________\////\\\___   
+      _\/\\\_____\//\\\___/\\\______\//\\\__\/\\\______________\///\\\__/\\\_____/\\\______\//\\\__  
+       _\/\\\______\//\\\_\///\\\\\\\\\\\/___\/\\\\\\\\\\\\\\\____\///\\\\\/_____\///\\\\\\\\\\\/___ 
+        _\///________\///____\///////////_____\///////////////_______\/////_________\///////////_____
+
+CATATAN PELATIHAN KSLOS 17/04/2016, LN07v1a.txt
+Latihan 07 : Pengenalan Binary Exploit & Reverse Engineering 1
+              Diajarkan menggunakan bahasa C sekaligus debugging dengan gdb.
+
+--------| Filosofi
+
+"Most introductory programming classes just teach
+how to read and write C. Don’t get me wrong, being fluent in C is very useful
+and is enough to make you a decent programmer, but it’s only a piece of the
+bigger picture. Most programmers learn the language from the top down
+and never see the big picture."
+
+"Hackers get their edge from knowing how all
+the pieces interact within this bigger picture. To see the bigger picture in the
+realm of programming, simply realize that C code is meant to be compiled.
+The code can’t actually do anything until it’s compiled into an executable
+binary file. Thinking of C-source as a program is a common misconception
+that is exploited by hackers every day. The binary a.out ’s instructions are
+written in machine language, an elementary language the CPU can under-
+stand"
+
+Hampir semua kelas programming hanya mengajarkan cara membaca dan menulis C.
+Padahal untuk menjadi programmer yang baik, harus melihat secara mendalam dan
+meluas "big picture". Hacker akan melihat sebuah program sebagaimana program
+tersebut dalam kondisi binary, bukan source.
+
+--------|First Prog
+#include <stdio.h>
+int main()
+{
+  int i;
+  for(i=0; i < 10; i++)
+  {
+  puts("Hello, world!\n");
+  }
+  return 0;
+}
+
+Compile kode di atas dengan gcc. Eksekusi utama program C dimulai dari 
+fungsi main(). Comment diawali dengan // atau /* */ yang akan dilewati
+oleh compiler. #include <stdio.h> adalah syntax yang membuat compiler
+akan meng"include" header untuk standard input/output (stdio) yang 
+berlokasi di /usr/include/stdio.h. File header akan di masukkan ke pro-
+gram saat compiling.
+
+--------| Melihat program lebih dalam
+
+Pada GNU development tools teradapat suatu program yang bernama objdump, 
+yang dapat melihat binary file(ELF) dengan bahasa Assembly(ASM).
+
++---------------------------------------
+$ objdump -M intel -D a.out
++---------------------------------------
+
+Karena hasilnya akan terlampau banyak, diperkenankan untuk menggunakan
+grep pada fungsi atau bagian yang ingin dilihat. Setiap byte akan diper
+lihatkan dalam bentuk hexadecimal. Karena 1 byte dapat memiliki kemung-
+kinan 2**8, maka 1 byte dapat direpresentasikan dalam bentuk 2 hexadecimal
+(16*16). Memory address ada di paling kiri dengan format 0x.
+
+
+
+
+--------| Debugging
+
+Debugging program ELF pada linux menggunakan gdb.
+
++---------------------------------------
+$ gdb -q ./a.out
+$ (gdb) break main
+$ (gdb) run
+$ (gdb) info registers                #lihat bagian register
+$ (gdb) set disassembly-flavor intel  #untuk maembaca dengan arsitektur intel(x86)
+$ (gdb) disassembly main
++---------------------------------------
+
+Dengan gdb, kita dapat menganalisa setiap langkah dari eksekusi 
+program, (examine, paused, step, & repeat).
+
+
+--------| Operasi pada ASM x86
+Instruksi ASM pada syntax intel mengikuti kaidah berikut : 
+
+        operation <destination>, <source>
+
+Beberapa operasi pada ASM x86 : 
+
++ mov
+  operasi ini akan menyalin nilai dari source ke destination
+
++ sub
+  mengurangi dari destination dengan source
+
++ inc
+  menambahkan 1 (hanya source saja, tidak ada destination)
+
++ cmp 
+  membandingkan source dengan destination, akan merubah eflag
+
++ j*
+  pindah(jump) ke memory address yang ada di source.
+  jle, j tergantung eflag, kecuali jmp.
+
+* lea
+  load effective address, sama seperti mov(?)
+
+
+Contoh:
+Apa hasilnya?
++---------------------------------------
+8048375: 89 e5  mov ebp,esp
+8048377: 83 ec 08 sub esp,0x8
++---------------------------------------
+
++---------------------------------------
+804838b: 83 7d fc 09 cmp DWORD PTR [ebp-4],0x9
+804838f: 7e 02       jle 8048393 <main+0x1f>
+8048391: eb 13       jmp 80483a6 <main+0x32>
++---------------------------------------
+
+--------| Extra Debugging
+
+Saat compile dengan GCC, tambahkan flag -g. Sehingga saat debugging 
+dapat memakai command 'list';
+
+--------| Examine Memory
+
+Mengetahui suatu memory address berisi nilai apa dapat menggunakan
+command 'x', yang merupakan singkatan dari examine.
+
+Karena sebuah program adalah sebagian besar merupakan kerja CPU dan 
+segmen memori, kita harus meng"examine" memori untuk tau apa yang 
+terjadi.
+ 
+Tipe display dengan command 'x' : 
+
+  o Display in octal.
+  x Display in hexadecimal.
+  u Display in unsigned, standard base-10 decimal.
+  t Display in binary.
+
+Contoh : 
++---------------------------------------
+$ (gdb) i r eip
+$ (gdb) x/x $eip
+$ (gdb) x/u $eip
+$ (gdb) x/2x $eip
++---------------------------------------
+
+Besar data yang dioutput, ketikkan tepat setelah tipe display ;
+
+  b single byte
+  h halfword, 2 bytes
+  w word, 4 bytes
+  g giant, 8 bytes
+
+Contoh : 
++---------------------------------------
+$ (gdb) x/8xb $eip
+$ (gdb) x/8xh $eip
++---------------------------------------
+
+Jika teman-teman memperhatikan ada yang aneh saat kita output dengan
+besar(byte) data yang berbeda. Itu dikarenakan arsitektur prosesor x86
+menggunakan byte order little-endian, yang artinya least significant byte
+(LSB) akan disimpan terlebih dahulu. Misalnya jika ada 4 byte yang dijadikan
+satu nilai, maka jika dipisah menjadi 1 byte maka urutannya akan terbalik.
+
+
+Contoh :
++---------------------------------------
+$ (gdb) x/4xb $eip
+$ (gdb) x/4ub $eip
+$ (gdb) x/1xw $eip
+$ (gdb) x/1uw $eip
++---------------------------------------
+
+Examine instruction :
++---------------------------------------
+i r eip
+x/i $eip
++---------------------------------------
+
+Bagaimana cara meng"examine" DWORD PTR [ebp-4]?
++---------------------------------------
+$ (gdb) x/x $ebp-4
++---------------------------------------
+
+--------| Next instruction
+
+Kita bisa melanjutkan intruksi dengan command :
++---------------------------------------
+$ (gdb) nexti 
+$ (gdb) ni
+$ (gdb) s
++---------------------------------------
+
+
+
+
+--------| Register
+
+Processor memiliki variabel spesial yang dinamakan registers. Setiap arsitek
+tur(x86,AT&T,ARM) memiliki register yang berbeda.
+
+Untuk pelatihan ini kita akan fokus pada arsitektur intel x86.
+
+4 register pertama yaitu EAX, ECX, EDX, dan EBX adalah general purpose regis-
+ter. Dikenal secara urut sebagai Accumulator, Counter, Data, dan Base register. 
+Register berguna untuk berbagai keperluan, namun tugas utamanya sebagai 
+variabel sementara untuk CPU.
+
+4 register selanjutnya adalah ESP, EBP, ESI, dan EDI adalah general purpose
+register juga, sering dikenal juga sebagai pointer atau index. Dikenal
+secara urut sebagai Stack Pointer, Base Pointer, Source Index, dan Destination index.
+Disebut sebagai pointer(ESP, EBP) karena mereka berdua menyimpan address 4 byte(32-bit).
+
+EIP register adalah register pointer instruksi, yang menunjuk ke posisi dimana
+instruksi pada CPU saat ini. Seperti saat kita membaca dengan menunjuk setiap 
+kata yang dibaca.
+
+EFLAGS isinya beberapa bit flags yang digunakan untuk cmp(compare) dan segmentasi
+memori.
+
+--------|Praktek
+
+Pada firstprog.c, cobalah menganalisa setiap perubahan register di fungsi main.
+Darimanakah mendapat "Hello World"?
+
+--------|Links&Referensi
+Hacking : Art Of Exploitation 2nd version*
+
+
+*: rekomendasi untuk dibaca
