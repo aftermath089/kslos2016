@@ -30,19 +30,68 @@ Interface : main window adalah cpu window. VA(virtual addresses) ada di paling k
 
 File win32.hlp akan dibagikan saat latihan
 
+Untuk memahami lebih dalam tentang PE carilah Portable Executable File Format Compendium
+
+Register window :
+eax : Extended Accumulator Register
+ebx : Extended Base Register
+ecx : Extended Counter Register
+edx : Extended Data REgister
+esi : Extended Source Index
+edi : Extended Destination Index
+ebp : Extended Base Pointer
+esp : Extended Stack Pointer
+eip : Extended Instruction Pointer
+
+size dari register adalah 4 bytes
+
+walaupun 32 bits, namun ada bagian 16 bit dan 8 bit yang tidak bisa dialamatkan secara langsung.
+yaitu : 
+16bit:
+AX, BX, CX, DX, SI, DI, BP, SP, IP
+8bit:
+AH/AL, BH/BL, CH/CL, DH/DL
+
+Contohnya : EDX == 7C90EB94
+DX == EB94
+DH == EB
+DL == 94
+
+Stack Window : berisi stack frame yang bisa dianalogikan seperti tumpukan piring
+
+Dump window : adalah hasil hex dump dari program yang dibuka
+
 --------| ReverseMe
 
-Di direktori SN sudah tersedia reverseme.exe yang akan kita gunakan untuk latihan kali ini. 
+Di direktori SN sudah tersedia reverseme.exe yang akan kita gunakan untuk latihan kali ini. Aplikasi Windows run pada Ring3 (high level), tapi mereka harus "bekerja" di Ring0 juga (kernel). Bagaimana cara melakukan hal tsb, Windows memiliki fungsi yang bisa digunakan untuk merequest operasi low level yang dinamakan dengan Windows API (Application Programming Interface).
 
-Milestone : 
+Simpelnya : aplikasi menggunakan API untuk membuat komputer melakukan sesuatu
 
-  +reverseme mencari file keyfile.dat, exaine setiap system call dengan win32.hlp
+Tugas : 
+
+  +perhatikan command push dan hasilnya pada stack window
+
+  +perhatikan fungsi mov
+
+  +reverseme mencari file keyfile.dat, examine API CreateFileA dengan win32.hlp(ctrl+F1)
+
   +cmp akan menset C/O/Z flag
+
   +jnz akan jump sesuai Z-flag, arrow akan menjadi merah jika jump
+
+  +mengganti flag(klik kiri di flag), agar memaksa jump
+
+  +melakukan breakpoint
+
+  +XOR akan menjadikan O&C Flag menjadi 0(clear), dan menset Z-Flag.
+
+  +Carilah pesan sukses dengan klik kanan>search for> all referenced text strings
+
+  +Melakukan patching, ganti jnz pertama menjadi jmp, lakukan nop sled pada jl. Jika sudah selesai, block semua yang sudah diubah di CPU window, lalu klikkanan->copytoexecutable->selection->klik kanan-> save file
 
 
 --------|Links&Referensi
-Hacking : Art Of Exploitation 2nd version*
+Lena Reversing for Beginners*
 
 
 *: rekomendasi untuk dibaca
