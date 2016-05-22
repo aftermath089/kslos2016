@@ -1,0 +1,103 @@
+__/\\\________/\\\_____/\\\\\\\\\\\____/\\\___________________/\\\\\__________/\\\\\\\\\\\___        
+ _\/\\\_____/\\\//____/\\\/////////\\\_\/\\\_________________/\\\///\\\______/\\\/////////\\\_       
+  _\/\\\__/\\\//______\//\\\______\///__\/\\\_______________/\\\/__\///\\\___\//\\\______\///__      
+   _\/\\\\\\//\\\_______\////\\\_________\/\\\______________/\\\______\//\\\___\////\\\_________     
+    _\/\\\//_\//\\\_________\////\\\______\/\\\_____________\/\\\_______\/\\\______\////\\\______    
+     _\/\\\____\//\\\___________\////\\\___\/\\\_____________\//\\\______/\\\__________\////\\\___   
+      _\/\\\_____\//\\\___/\\\______\//\\\__\/\\\______________\///\\\__/\\\_____/\\\______\//\\\__  
+       _\/\\\______\//\\\_\///\\\\\\\\\\\/___\/\\\\\\\\\\\\\\\____\///\\\\\/_____\///\\\\\\\\\\\/___ 
+        _\///________\///____\///////////_____\///////////////_______\/////_________\///////////_____
+
+CATATAN PELATIHAN KSLOS 22/05/2016, LN12v1a.txt
+Latihan 12 : Basic Networking 4
+            Port Scanning menggunakan nmap (opsional dengan python)
+
+--------| Pendahuluan
+
+Port Scanning
+Scanning port adalah cara untuk mengetahui port mana yang sedang listening dan
+menerima koneksi. Karena service dijalankan diatas standar dan portnya sesuai
+standar, maka informasi ini bisa dipakai untuk menentukan service-service mana yang
+berjalan disuatu host. Bentuk paling sederhana adalah mencoba semua port yang ada
+di suatu server dengan TCP. Cara ini efektif, namun sangat berisik dan mudah
+diketahui. Untuk menghindari ini ada beberapa teknik. Disini kita menggunakan nmap
+untuk port scanning.
+
+
+--------| Stealth SYN Scan
+SYN scan juga dikenal sebagai half-open scan. Ini karena SYN scan tidak membuka
+koneksi TCP secara full. 
+
+TCP/IP handshake : saat koneksi dibuat, SYN packet pertama dikirim, kemudian
+				   SYN/ACK packet dikirim balik, dan terakhir ACK packet dikirim
+				   lagi untuk menyelesaikan handshake.
+SYN scan tidak menyelesaikan handshake, sehingga koneksi full tidak akan pernah
+terbuka. Hanya SYN Packet pertama yang dikirim, dan responsnya diperiksa. Jika
+
++---------------------------------------
+$ sudo nmap -sS 192.168.42.72
++---------------------------------------
+
+--------|FIN, X-mas, and Null Scans
+Karena ada SYN scan, dibuat tool-tool untuk mendeteksi koneksi half-open. Maka
+ada beberapa teknik scanning yang dibuat : FIN, X-mas, dan Null. Ketiganya akan
+mengirim packet yang "ga jelas" ke semua port pada sistem target.
+
+Jika port terbuka, maka packet akan diabaikan. Namun, jika port tertutup dan 
+implementasi mengikuti RFC 793, maka paket RST akan dikirim.
+
+Disini dibuktikan bahwa pengetahuan akan teori/standar sangat membantu untuk 
+mendesain teknik-teknik penyerangan pada jaringan.
+
+FIN scan mengirim FIN packet, X-mas scan mengirim packet dengan FIN, URG, dan
+PUSH, dan Null scan mengirim packet tanpa adanya TCP flag. Untuk mengetahui
+apa gunanya FIN packet, dll baca tentang TCP flags.
+
+FIN scan : -sF
+X-mas scan : -sX
+Null scan : -sN
+
+--------|Spoofing Decoys
+Cara lain untuk menghindari deteksi adalah sembunyi diantara decoy. 
+Pada cara ini kita akan men-spoof koneksi dari beberapa IP address decoy diantara
+port scan aslinya. Respon dari koneksi spoof tidak diperlukan. 
+
+Pada contoh dibawah kita akan scan IP 192.168.42.72, menggunakan 192.168.42.10
+dan 192.168.42.11 sebagai decoy.
+
++---------------------------------------
+$ sudo nmap -D 192.168.42.10,192.168.42.11 192.168.42.72
++---------------------------------------
+
+--------|Idle Scanning
+Pada cara ini scannning port penggunakan paket spoofed dari host idle(diam),
+dengan mengamati perubahan pada host idle tsb. Perubahan ini akan terjadi pada
+IP ID. Attacker harus mencari host idle yang tidak sedang mengirim atau menerima
+paket sama sekali. IP ID dari host tersebut harus bisa diprediksi dan tidak random,
+contohnya network Printer. 
+
+Pertama, attacker akan mendapatkan IP ID dari idle host dengan mengirim SYN Packet
+dan mengamati IP ID dari respons. Dengan mengulangi cara ini beberapa kali, pertam
+bahan IP ID tiap paket dapat diketahui.
+
+Kemudian, Attacker akan mengirimkan spoofed SYN Packet dengan IP host idle. Ada dua
+hal yang mngkin terjadi :
+	1. Port Listening : Paket SYN/ACK akan dikirim ke idle host
+	2. Port Tertutup  : Tidak dikirim paket
+Karena idle host sebenarnya tidak pengirim SYN packet yang pertama, maka idle host
+mengirim RST packet.
+
+Terakhir, attacker akan mengkontak idle host, untuk mengetahui berapa IP ID telah
+bertambah. Jika hanya bertambah satu, maka bisa diasumsikan idle host tidak mengirim
+RST paket tadi ke sistem target, artinya port tertutup. Jika bertambah dua, maka
+bisa diasumsikan port terbuka.
+
++---------------------------------------
+$ sudo nmap -sI idlehost.com 192.168.42.7
++---------------------------------------
+
+--------|Links&Referensi
+Hacking : Art Of Exploitation 2nd version*
+
+
+*: rekomendasi untuk dibaca

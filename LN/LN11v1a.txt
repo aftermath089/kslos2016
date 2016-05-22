@@ -31,12 +31,12 @@ $ ifconfig eth0
 +---------------------------------------
 
 --------| Sniffing?
-Menangkap packet yang sebenarnya bukan untuk dilihat publick dinamakan dengan
+Menangkap packet yang sebenarnya bukan untuk dilihat publik dinamakan dengan
 sniffing. Sniffing packets dalam promiscuous mode pada unswitched network bisa
 memperlihatkan informasi-informasi yang krusial.
 
 +---------------------------------------
-$ sudo tcpdump -l -X 'ip host 192.168.0.118'
+$ sudo tcpdump -l -X 'ip host 192.168.43.1'
 tcpdump: listening on eth0
 +---------------------------------------
 
